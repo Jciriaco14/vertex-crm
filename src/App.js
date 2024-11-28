@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, PlusCircle, Search, ChevronDown, ChevronUp, 
   Calendar, Trash2, Edit, ArrowDownAZ, Filter 
-} from 'lucide-react';
-
-function App() {
+} from 'lucide-react';function App() {
   const [clients, setClients] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,23 +23,22 @@ function App() {
     '$5,000 - $10,000',
     '$10,000 - $25,000',
     '$25,000+'
-  ];
+  ];// Fetch clients from backend
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
-  // Column definitions
-  const columns = [
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'company', label: 'Company', sortable: true },
-    { key: 'email', label: 'Email', sortable: true },
-    { key: 'phone', label: 'Phone', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
-    { key: 'service', label: 'Service Interest', sortable: true },
-    { key: 'budget', label: 'Budget Range', sortable: true },
-    { key: 'lastContact', label: 'Last Contact', sortable: true },
-    { key: 'followUp', label: 'Follow-up Date', sortable: true },
-    { key: 'notes', label: 'Notes', sortable: false },
-    { key: 'actions', label: 'Actions', sortable: false }
-  ];
+  const fetchClients = async () => {
+    try {
+      const response = await fetch('https://vertex-crm-backend.onrender.com/api/clients');
+      const data = await response.json();
+      setClients(data);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
 
+  // Sorting function
   const handleSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -70,29 +67,82 @@ function App() {
       }
       return 0;
     });
-  };
+  };const addClient = async (e) => {
+    e.preventDefault();
+    const formData = {
+      name: e.target.name.value,
+      company: e.target.company.value,
+      email: e.target.email.value,
+      phone: e.target.phone.value,
+      status: e.target.status.value,
+      service: e.target.service.value,
+      budget: e.target.budget.value,
+      lastContact: e.target.lastContact.value,
+      followUp: e.target.followUp.value,
+      notes: e.target.notes.value,
+    };
 
-  const addClient = (newClient) => {
-    setClients([...clients, { 
-      ...newClient, 
-      id: Date.now(),
-      createdAt: new Date().toISOString()
-    }]);
-    setShowAddForm(false);
-  };
+    try {
+      const response = await fetch('https://vertex-crm-backend.onrender.com/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
 
-  const updateClient = (id, updatedData) => {
-    setClients(clients.map(client => 
-      client.id === id ? { ...client, ...updatedData } : client
-    ));
-    setEditingClient(null);
-  };
-
-  const deleteClient = (id) => {
-    if (window.confirm('Are you sure you want to delete this client?')) {
-      setClients(clients.filter(client => client.id !== id));
+      const data = await response.json();
+      setClients([...clients, data]);
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error adding client:', error);
     }
   };
+
+  const updateClient = async (id, updatedData) => {
+    try {
+      const response = await fetch(`https://vertex-crm-backend.onrender.com/api/clients/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      const data = await response.json();
+      setClients(clients.map(client => 
+        client._id === id ? data : client
+      ));
+      setEditingClient(null);
+    } catch (error) {
+      console.error('Error updating client:', error);
+    }
+  };
+
+  const deleteClient = async (id) => {
+    if (window.confirm('Are you sure you want to delete this client?')) {
+      try {
+        await fetch(`https://vertex-crm-backend.onrender.com/api/clients/${id}`, {
+          method: 'DELETE'
+        });
+        setClients(clients.filter(client => client._id !== id));
+      } catch (error) {
+        console.error('Error deleting client:', error);
+      }
+    }
+  };const columns = [
+    { key: 'name', label: 'Name', sortable: true },
+    { key: 'company', label: 'Company', sortable: true },
+    { key: 'email', label: 'Email', sortable: true },
+    { key: 'phone', label: 'Phone', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'service', label: 'Service Interest', sortable: true },
+    { key: 'budget', label: 'Budget Range', sortable: true },
+    { key: 'lastContact', label: 'Last Contact', sortable: true },
+    { key: 'followUp', label: 'Follow-up Date', sortable: true },
+    { key: 'notes', label: 'Notes', sortable: false },
+    { key: 'actions', label: 'Actions', sortable: false }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -100,41 +150,39 @@ function App() {
       <div className="bg-blue-600 shadow">
         <div className="max-w-full mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">Vertex Connections CRM</h1>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Search clients..."
-                  className="pl-10 pr-4 py-2 rounded-md border-0 focus:ring-2 focus:ring-blue-400"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <select
-                className="rounded-md border-0 py-2 px-3 focus:ring-2 focus:ring-blue-400"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="bg-white text-blue-600 px-4 py-2 rounded-md flex items-center gap-2 hover:bg-blue-50"
-              >
-                <PlusCircle size={20} />
-                Add Client
-              </button>
+          <h1 className="text-2xl font-bold text-white">Vertex Connections CRM</h1>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search clients..."
+                className="pl-10 pr-4 py-2 rounded-md border-0 focus:ring-2 focus:ring-blue-400"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
+            <select
+              className="rounded-md border-0 py-2 px-3 focus:ring-2 focus:ring-blue-400"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              {statusOptions.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="bg-white text-blue-600 px-4 py-2 rounded-md flex items-center gap-2 hover:bg-blue-50"
+            >
+              <PlusCircle size={20} />
+              Add Client
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Spreadsheet View */}
+    </div>{/* Main Content */}
       <div className="max-w-full mx-auto px-4 py-6">
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
@@ -144,8 +192,8 @@ function App() {
                   {columns.map(column => (
                     <th
                       key={column.key}
-                      className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider cursor-pointer hover:bg-blue-100"
                       onClick={() => column.sortable && handleSort(column.key)}
+                      className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider cursor-pointer hover:bg-blue-100"
                     >
                       <div className="flex items-center gap-2">
                         {column.label}
@@ -160,19 +208,11 @@ function App() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {getSortedClients().map((client) => (
-                  <tr key={client.id} className="hover:bg-blue-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.company}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.phone}
-                    </td>
+                  <tr key={client._id} className="hover:bg-blue-50">
+                    <td className="px-6 py-4 whitespace-nowrap">{client.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.company}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.phone}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                         ${client.status === 'Active' ? 'bg-green-100 text-green-800' : 
@@ -181,21 +221,11 @@ function App() {
                         {client.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.service}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.budget}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.lastContact}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.followUp}
-                    </td>
-                    <td className="px-6 py-4">
-                      {client.notes}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.service}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.budget}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.lastContact}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{client.followUp}</td>
+                    <td className="px-6 py-4">{client.notes}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button
@@ -205,7 +235,7 @@ function App() {
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => deleteClient(client.id)}
+                          onClick={() => deleteClient(client._id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 size={16} />
@@ -218,9 +248,7 @@ function App() {
             </table>
           </div>
         </div>
-      </div>
-
-      {/* Add/Edit Client Modal */}
+      </div>{/* Add/Edit Client Modal */}
       {(showAddForm || editingClient) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
@@ -243,9 +271,9 @@ function App() {
               };
               
               if (editingClient) {
-                updateClient(editingClient.id, formData);
+                updateClient(editingClient._id, formData);
               } else {
-                addClient(formData);
+                addClient(e);
               }
             }}>
               <div className="grid grid-cols-2 gap-4">
@@ -342,7 +370,8 @@ function App() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Notes</label><textarea
+                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <textarea
                     name="notes"
                     rows="3"
                     defaultValue={editingClient?.notes}
