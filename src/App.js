@@ -101,7 +101,7 @@ import {
 
   const updateClient = async (id, updatedData) => {
     try {
-      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients'); {
+      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients/${id}', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
