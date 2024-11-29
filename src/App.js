@@ -30,7 +30,7 @@ import {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch('https://vertex-crm-backend.onrender.com/api/clients');
+      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients');
       const data = await response.json();
       setClients(data);
     } catch (error) {
@@ -83,7 +83,7 @@ import {
     };
 
     try {
-      const response = await fetch('https://vertex-crm-backend.onrender.com/api/clients', {
+      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients'); {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ import {
 
   const updateClient = async (id, updatedData) => {
     try {
-      const response = await fetch(`https://vertex-crm-backend.onrender.com/api/clients/${id}`, {
+      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients'); {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ import {
   const deleteClient = async (id) => {
     if (window.confirm('Are you sure you want to delete this client?')) {
       try {
-        await fetch(`https://vertex-crm-backend.onrender.com/api/clients/${id}`, {
+        await fetch(`https://vertex-crm-backend-1.onrender.com/api/clients/${id}`, {
           method: 'DELETE'
         });
         setClients(clients.filter(client => client._id !== id));
