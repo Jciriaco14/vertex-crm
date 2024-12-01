@@ -48,60 +48,59 @@ import {
   };
 
   const getSortedClients = () => {
-    const filtered = clients.filter(client => 
-      filterStatus === 'all' || client.status === filterStatus
-    ).filter(client =>
-      Object.values(client).some(value => 
+    const filtered = clients.filter(client => {
+      const matchesStatus = filterStatus === 'all' || client.status === filterStatus;
+      const matchesSearch = Object.values(client).some(value =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
+      );
+      return matchesStatus && matchesSearch;
+    });
+    
 
     if (!sortConfig.key) return filtered;
 
-    return [...filtered].sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'ascending' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'ascending' ? 1 : -1;
-      }
-      return 0;
-    });
-  };const addClient = async (e) => {
-    e.preventDefault();
-    const formData = {
-      name: e.target.name.value,
-      company: e.target.company.value,
-      email: e.target.email.value,
-      phone: e.target.phone.value,
-      status: e.target.status.value,
-      service: e.target.service.value,
-      budget: e.target.budget.value,
-      lastContact: e.target.lastContact.value,
-      followUp: e.target.followUp.value,
-      notes: e.target.notes.value,
-    };
+return [...filtered].sort((a, b) => {
+  return (
+    (a[sortConfig.key] > b[sortConfig.key] ? 1 : -1) *
+    (sortConfig.direction === 'ascending' ? 1 : -1)
+  );
+});
 
-    try {
-      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-      setClients([...clients, data]);
-      setShowAddForm(false);
-    } catch (error) {
-      console.error('Error adding client:', error);
-    }
-  };
+    const addClient = async (e) => {
+      e.preventDefault();
+      const formData = {
+        name: e.target.name.value,
+        company: e.target.company.value,
+        email: e.target.email.value,
+        phone: e.target.phone.value,
+        status: e.target.status.value,
+        service: e.target.service.value,
+        budget: e.target.budget.value,
+        lastContact: e.target.lastContact.value,
+        followUp: e.target.followUp.value,
+        notes: e.target.notes.value,
+      };
+    
+      try {
+        const response = await fetch(`https://vertex-crm-backend-1.onrender.com/api/clients/${id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+    
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to add client');
+        setClients([...clients, data]); // Add the new client to the state
+        setShowAddForm(false); // Close the form
+      } catch (error) {
+        console.error('Error adding client:', error.message);
+        alert(error.message);
+      }
+    };        
 
   const updateClient = async (id, updatedData) => {
     try {
-      const response = await fetch('https://vertex-crm-backend-1.onrender.com/api/clients/${id}', {
+      const response = await fetch(`https://vertex-crm-backend-1.onrender.com/api/clients/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
